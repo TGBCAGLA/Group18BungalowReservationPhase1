@@ -56,18 +56,23 @@ const Navbar = () => {
               </a>
             </li>
             <li>
-              <a href="/bungalovlar" className="text-white font-semibold text-lg hover:text-yellow-400 transition duration-300">
+              <a href="/bungalows" className="text-white font-semibold text-lg hover:text-yellow-400 transition duration-300">
                 Bungalows
               </a>
             </li>
             <li>
-              <a href="/hakkimizda" className="text-white font-semibold text-lg hover:text-yellow-400 transition duration-300">
+              <a href="/about" className="text-white font-semibold text-lg hover:text-yellow-400 transition duration-300">
                 About
               </a>
             </li>
             <li>
-              <a href="/iletisim" className="text-white font-semibold text-lg hover:text-yellow-400 transition duration-300">
+              <a href="/contact" className="text-white font-semibold text-lg hover:text-yellow-400 transition duration-300">
                 Contact
+              </a>
+            </li>
+            <li>
+              <a href="/login" className="text-white font-semibold text-lg hover:text-yellow-400 transition duration-300">
+                Login
               </a>
             </li>
           </ul>

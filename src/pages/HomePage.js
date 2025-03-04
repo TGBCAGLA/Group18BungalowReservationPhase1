@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import _Carousel from "../components/_Carousel"; // Carousel bileşenini import ettik
+import _Carousel from "../components/_Carousel"; 
 
 
 const HomePage = () => {
@@ -55,7 +55,7 @@ const HomePage = () => {
       {/* carousel için */}
       <_Carousel />
 
-      {/* Diğer içerik */}
+      
       <div className="container mx-auto py-10 text-center">
         <h1 className="text-4xl font-semibold text-gray-800">Welcome to BungaRes</h1>
         <p className="mt-4 text-lg text-gray-600">Explore the best bungalows for your next vacation!</p>
