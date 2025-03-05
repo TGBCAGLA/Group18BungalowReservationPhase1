@@ -47,7 +47,7 @@ const AdminLogin = () => {
           Login
         </button>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/login")}
           className="bg-gray-600 px-6 py-3 rounded-lg text-lg font-semibold hover:bg-gray-700 transition"
         >
           Back
