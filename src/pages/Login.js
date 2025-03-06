@@ -4,7 +4,7 @@ const Login = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-white-900 text-white">
       <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-80 text-center">
         <h1 className="text-2xl font-bold mb-4">Login</h1>
       

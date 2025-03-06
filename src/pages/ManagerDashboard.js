@@ -8,9 +8,9 @@ const ManagerDashboard = () => {
   };
 
   const pastReservations = [
-    { id: 1, name: "Ahmet", surname: "Yılmaz", email: "ahmet@gmail.com", phone: "5556259685", tckn: "12345678901", bungalowType: "Family" },
-    { id: 2, name: "Fatma", surname: "Demir", email: "fatma@hotmail.com", phone: "5552345265", tckn: "23456789012", bungalowType: "Big family" },
-    { id: 3, name: "Ali", surname: "Tekmez", email: "ali@gmail.com", phone: "5553456784", tckn: "34567890123", bungalowType: "Luxury" },
+    { id: 1, name: "Ahmet", surname: "Yılmaz", email: "ahmetylmz@gmail.com", phone: "5556259685", tckn: "12345678901", bungalowType: "Family" },
+    { id: 2, name: "Fatma", surname: "Demir", email: "fatmademir@hotmail.com", phone: "5552345265", tckn: "23456789012", bungalowType: "Big family" },
+    { id: 3, name: "Ali", surname: "Tekmez", email: "alitek@gmail.com", phone: "5553456784", tckn: "34567890123", bungalowType: "Luxury" },
   ];
 
   return (

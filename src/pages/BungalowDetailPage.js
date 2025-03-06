@@ -2,7 +2,6 @@ import React from "react";
 import { useParams, Link } from "react-router-dom";
 import ModalImage from "react-modal-image";
 
-
 const BungalowDetailPage = () => {
   const { bungalowId } = useParams();
 
@@ -12,6 +11,7 @@ const BungalowDetailPage = () => {
       price: 120,
       rating: 4.5,
       totalReviews: 3,
+      features: ["🏊 Private Pool", "🏠 Cozy Bungalow", "🛏️ 4 Beds"],
       description: (
         <>
           <h2 className="text-xl font-semibold mb-4">
@@ -103,6 +103,7 @@ const BungalowDetailPage = () => {
       price: 180,
       rating: 4.8,
       totalReviews: 5,
+      features: ["🏊 Large Pool", "🏠 Spacious Home", "🛏️ 8 Beds"],
       description: (
         <>
           <h2 className="text-xl font-semibold mb-4">
@@ -120,9 +121,7 @@ const BungalowDetailPage = () => {
             <li>
               <span className="font-semibold">8-Person Accommodation:</span> The
               Big Family Bungalow is ideal for larger families or groups,
-              offering comfortable living spaces for up to 8 people. With
-              spacious rooms and a large outdoor area, everyone can enjoy their
-              own space while being together.
+              offering comfortable living spaces for up to 8 people.
             </li>
             <li>
               <span className="font-semibold">Private Pool:</span> Cool off with
@@ -210,6 +209,7 @@ const BungalowDetailPage = () => {
       price: 250,
       rating: 4.2,
       totalReviews: 4,
+      features: ["🏊 Heated Pool", "🏠 Luxury Villa", "🛏️ 8 Beds"],
       description: (
         <>
           <p className="text-xl font-semibold mb-4">
@@ -325,7 +325,6 @@ const BungalowDetailPage = () => {
 
       {/* kapak fotoğrafı  küçük fotoğraflar yazı */}
       <div className="flex flex-col md:flex-row gap-6">
-        
         <div className="md:w-1/2">
           {/* Kapak Fotosu */}
           <img
@@ -358,7 +357,6 @@ const BungalowDetailPage = () => {
           </div>
         </div>
 
-        
         <div className="md:w-1/2">
           {/* acıklama */}
           <div>{bungalow.description}</div>
@@ -368,6 +366,14 @@ const BungalowDetailPage = () => {
             <span className="text-2xl font-bold">
               ${bungalow.price} / Night
             </span>
+            {/* semboller */}
+            <div className="flex flex-wrap gap-2 text-lg">
+              {bungalow.features.map((feature, index) => (
+                <span key={index} className="bg-gray-200 px-3 py-1 rounded-md">
+                  {feature}
+                </span>
+              ))}
+            </div>
             <Link to={`/reservation/${bungalowId}`}>
               <button className="bg-green-500 text-white py-2 px-6 rounded-lg shadow-lg hover:bg-blue-600">
                 Book Now
@@ -376,6 +382,7 @@ const BungalowDetailPage = () => {
           </div>
         </div>
       </div>
+
       {/* değerlendirme comment */}
       <div className="mt-8">
         <h2 className="text-2xl font-semibold mb-4">Guest Reviews</h2>
@@ -392,7 +399,6 @@ const BungalowDetailPage = () => {
           ))}
         </div>
       </div>
-   
     </div>
   );
 };
