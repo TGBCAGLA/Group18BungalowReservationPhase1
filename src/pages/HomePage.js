@@ -1,32 +1,74 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import _Carousel from "../components/_Carousel"; 
-
+import { useAuth } from "../contexts/AuthContext";
+import api from "../api";
+import "./HomePage.css";
 
 const HomePage = () => {
-  const featuredBungalows = [
+  const [featuredBungalows, setFeaturedBungalows] = useState([
     {
       id: "small-family",
       image: "/assets/small1.jpg",
       price: "$120/night",
       name: "Family Bungalow",
-      rating: 4.5,
+      rating: 0,
     },
     {
       id: "big-family",
       image: "/assets/big_family.jpg",
       price: "$180/night",
       name: "Big Family Bungalow",
-      rating: 4.8,
+      rating: 0,
     },
     {
       id: "luxury",
       image: "/assets/lux.jpg",
       price: "$250/night",
       name: "Luxury Bungalow",
-      rating: 4.2,
+      rating: 0,
     },
-  ];
+  ]);
+
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchRatings = async () => {
+      try {
+        const bungalowIdMap = {
+          "small-family": 1,
+          "big-family": 2,
+          "luxury": 3
+        };
+
+        const updatedBungalows = await Promise.all(
+          featuredBungalows.map(async (bungalow) => {
+            const response = await api.get(`/bungalows/${bungalowIdMap[bungalow.id]}/comments`);
+            const comments = response.data;
+            
+            if (comments.length > 0) {
+              const totalRating = comments.reduce((sum, comment) => sum + comment.rating, 0);
+              const averageRating = totalRating / comments.length;
+              return { ...bungalow, rating: averageRating };
+            }
+            return bungalow;
+          })
+        );
+
+        setFeaturedBungalows(updatedBungalows);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching ratings:", error);
+        setError("Failed to load ratings");
+        setLoading(false);
+      }
+    };
+
+    fetchRatings();
+  }, []);
 
   const renderStars = (rating) => {
     const fullStars = Math.floor(rating);
@@ -50,13 +92,31 @@ const HomePage = () => {
     return stars;
   };
 
-  return (
-    <div>
-      {/* carousel için */}
-      <_Carousel />
+  const handleBookNow = (type) => {
+    if (!user) {
+      const bungalowIdMap = {
+        "small-family": 1,
+        "big-family": 2,
+        "luxury": 3
+      };
+      const numericBungalowId = bungalowIdMap[type];
+      navigate('/login', { state: { bungalowId: numericBungalowId } });
+    } else {
+      const bungalowIdMap = {
+        "small-family": 1,
+        "big-family": 2,
+        "luxury": 3
+      };
+      const numericBungalowId = bungalowIdMap[type];
+      navigate(`/reservation/${numericBungalowId}`);
+    }
+  };
 
+  return (
+    <div className="min-h-screen">
+      <_Carousel />
       
-      <div className="container mx-auto py-10 text-center">
+      <div className="container mx-auto px-4 py-10 text-center">
         <h1 className="text-4xl font-semibold text-gray-800">Welcome to BungaRes</h1>
         <p className="mt-4 text-lg text-gray-600">Explore the best bungalows for your next vacation!</p>
 
@@ -76,21 +136,28 @@ const HomePage = () => {
                   <div className="flex items-center justify-center mt-2">
                     <div className="flex items-center">
                       {renderStars(bungalow.rating)}
-                      <span className="ml-2 text-gray-600">{bungalow.rating}</span>
+                      <span className="ml-2 text-gray-600">{bungalow.rating.toFixed(1)}</span>
                     </div>
                   </div>
-                  <Link to={`/bungalow/${bungalow.id}`}>
-                    <button className="w-full mt-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-                      Reserve Now
+                  <div className="flex flex-col gap-2 mt-4">
+                    <Link to={`/bungalows/${bungalow.id}`}>
+                      <button className="w-full py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                        Details
+                      </button>
+                    </Link>
+                    <button 
+                      onClick={() => handleBookNow(bungalow.id)}
+                      className="w-full py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+                    >
+                      Book Now
                     </button>
-                  </Link>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
-
     </div>
   );
 };

@@ -305,14 +305,14 @@ const BungalowDetailPage = () => {
   if (!bungalow) {
     return <div>Bungalow not found!</div>;
   }
-  // yıldız gösteren fonksiyon
+ 
   const renderStars = (rating) => {
     const fullStars = Math.floor(rating);
     const halfStar = rating % 1 !== 0;
     return (
       <span className="text-yellow-500 inline-flex items-center text-sm sm:text-lg md:text-xl">
         {"★".repeat(fullStars)}
-        {halfStar && "☆"} {/* Yarım yıldız için  */}
+        {halfStar && "☆"}
         {"☆".repeat(5 - fullStars - (halfStar ? 1 : 0))}
       </span>
     );
@@ -320,13 +320,13 @@ const BungalowDetailPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 pt-20">
-      {/* head */}
+      
       <h1 className="text-4xl font-bold text-center mb-6">{bungalow.name}</h1>
 
-      {/* kapak fotoğrafı  küçük fotoğraflar yazı */}
+      
       <div className="flex flex-col md:flex-row gap-6">
         <div className="md:w-1/2">
-          {/* Kapak Fotosu */}
+          
           <img
             src={bungalow.image}
             alt={bungalow.name}
@@ -334,7 +334,7 @@ const BungalowDetailPage = () => {
             style={{ height: "300px", objectFit: "cover" }}
           />
 
-          {/* Küçük Fotolar */}
+       
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {bungalow.gallery.map((image, index) => (
               <div key={index} className="w-full h-48">
@@ -346,7 +346,7 @@ const BungalowDetailPage = () => {
                 />
               </div>
             ))}
-            {/* puanlama  */}
+           
             <div className="flex justify-center items-center gap-2 mb-4">
               {renderStars(bungalow.rating)}
               <span className="text-lg font-semibold">{bungalow.rating}</span>
@@ -358,15 +358,15 @@ const BungalowDetailPage = () => {
         </div>
 
         <div className="md:w-1/2">
-          {/* acıklama */}
+         
           <div>{bungalow.description}</div>
 
-          {/* fiyat rezervasyon */}
+          
           <div className="mt-6 flex justify-between items-center">
             <span className="text-2xl font-bold">
               ${bungalow.price} / Night
             </span>
-            {/* semboller */}
+          
             <div className="flex flex-wrap gap-2 text-lg">
               {bungalow.features.map((feature, index) => (
                 <span key={index} className="bg-gray-200 px-3 py-1 rounded-md">
@@ -383,7 +383,7 @@ const BungalowDetailPage = () => {
         </div>
       </div>
 
-      {/* değerlendirme comment */}
+      
       <div className="mt-8">
         <h2 className="text-2xl font-semibold mb-4">Guest Reviews</h2>
         <div className="space-y-6">

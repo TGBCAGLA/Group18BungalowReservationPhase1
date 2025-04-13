@@ -1,62 +1,71 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
-const _Carousel = ({ className = "mt-[80px] md:mt-[100px]" }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  const images = [
-    "/assets/homepage7.png",
-    "/assets/homepage4.png",
-    "/assets/homepage8.png"
+const _Carousel = () => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const slides = [
+    {
+      image: '/assets/homepage4.png',
+      title: 'Luxury Bungalows',
+      description: 'Experience the ultimate comfort in our luxury bungalows',
+    },
+    {
+      image: '/assets/homepage6.jpg',
+      title: 'Family Getaway',
+      description: 'Perfect for family vacations and memorable moments',
+    },
+    {
+      image: '/assets/homepage7.png',
+      title: 'Nature Retreat',
+      description: 'Immerse yourself in nature and tranquility',
+    },
   ];
 
-  const nextSlide = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
-  };
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000);
 
-  const prevSlide = () => {
-    setCurrentIndex(
-      (prevIndex) => (prevIndex - 1 + images.length) % images.length
-    );
-  };
+    return () => clearInterval(timer);
+  }, []);
 
   return (
-    <div className={`relative w-full mx-auto px-4 sm:px-8 md:px-16 ${className}`}>
-      <div className="overflow-hidden rounded-lg w-full h-[400px]">
-        <img
-          src={images[currentIndex]}
-          alt={`carousel-img-${currentIndex}`}
-          className="w-full h-full object-cover transition-all duration-500 ease-in-out"
-        />
-      </div>
-
-      {/* left arrow */}
-      <button
-        className="absolute top-1/2 left-2 transform -translate-y-1/2 bg-gray-800 text-white p-2 rounded-full shadow-md hover:bg-gray-600 transition duration-300"
-        onClick={prevSlide}
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
-        </svg>
-      </button>
-
-      {/* right arrow */}
-      <button
-        className="absolute top-1/2 right-2 transform -translate-y-1/2 bg-gray-800 text-white p-2 rounded-full shadow-md hover:bg-gray-600 transition duration-300"
-        onClick={nextSlide}
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-        </svg>
-      </button>
-
-      {/* dots */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-        {images.map((_, index) => (
+    <div className="relative h-[600px] overflow-hidden">
+      {slides.map((slide, index) => (
+        <div
+          key={index}
+          className={`absolute w-full h-full transition-opacity duration-500 ${
+            index === currentSlide ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <div
+            className="w-full h-full bg-cover bg-center"
+            style={{ backgroundImage: `url(${slide.image})` }}
+          >
+            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+              <div className="text-center text-white">
+                <h2 className="text-5xl font-bold mb-4">{slide.title}</h2>
+                <p className="text-2xl mb-8">{slide.description}</p>
+                <Link
+                  to="/bungalows"
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg transition duration-300 text-lg"
+                >
+                  Explore Bungalows
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+      <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+        {slides.map((_, index) => (
           <button
             key={index}
-            onClick={() => setCurrentIndex(index)}
-            className={`w-2.5 h-2.5 rounded-full ${currentIndex === index ? "bg-white" : "bg-gray-400"} transition duration-300`}
-          ></button>
+            className={`w-3 h-3 rounded-full ${
+              index === currentSlide ? 'bg-white' : 'bg-gray-400'
+            }`}
+            onClick={() => setCurrentSlide(index)}
+          />
         ))}
       </div>
     </div>

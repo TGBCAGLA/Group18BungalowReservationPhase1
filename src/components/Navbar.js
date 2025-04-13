@@ -81,24 +81,18 @@ const Navbar = () => {
                 Contact
               </Link>
             </li>
-
             {user ? (
               <>
-                {(user.role === 'manager' || user.role === 'admin') && (
+                {user.role === 'manager' && (
                   <li>
                     <Link
-                      to={
-                        user.role === 'admin'
-                          ? '/admin-dashboard'
-                          : '/manager-dashboard'
-                      }
+                      to="/manager-dashboard"
                       className="text-white font-semibold text-lg hover:text-yellow-400 transition duration-300"
                     >
                       Dashboard
                     </Link>
                   </li>
                 )}
-
                 <li>
                   <Link
                     to="/profile"
@@ -140,10 +134,9 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Navbar yüksekliğini içerikten ayırmak için boşluk bırak */}
       <div className="h-16"></div>
     </>
   );
 };
 
-export default Navbar;
+export default Navbar; 

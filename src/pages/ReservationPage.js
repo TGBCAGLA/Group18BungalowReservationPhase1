@@ -1,81 +1,252 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
+import "./ReservationPage.css";
 
 const ReservationPage = () => {
   const { bungalowId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const bungalowIdNum = parseInt(bungalowId);
+  
   const bungalowPrices = {
-    "small-family": 120,
-    "big-family": 180,
-    luxury: 250,
+    1: 120, // family-bungalow
+    2: 180, // big-family-bungalow
+    3: 250  // luxury-bungalow
   };
 
-  const handleConfirmClick = () => {
-    setShowPopup(false);
-    navigate("/"); // homepage e gönderiyor
+  const bungalowNames = {
+    1: "Family Bungalow",
+    2: "Big Family Bungalow",
+    3: "Luxury Bungalow"
   };
-
-  const pricePerNight = bungalowPrices[bungalowId] || 0;
 
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
   const [totalPrice, setTotalPrice] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
   const [sameDayError, setSameDayError] = useState("");
-  const [currentStep, setCurrentStep] = useState(1); // mevcut step için yapıldı
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [tckn, setTckn] = useState("");
-  const [firstNameError, setFirstNameError] = useState(false);
-  const [lastNameError, setLastNameError] = useState(false);
-  const [emailError, setEmailError] = useState(false);
-  const [phoneError, setPhoneError] = useState(false);
-  const [tcknError, setTcknError] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
   const [showPopup, setShowPopup] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("credit-card");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardName, setCardName] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [cvv, setCvv] = useState("");
+  const [bookedDates, setBookedDates] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [hoveredDate, setHoveredDate] = useState(null);
+
+  useEffect(() => {
+    if (!bungalowIdNum) {
+      navigate('/');
+    }
+    fetchBookedDates();
+  }, [bungalowIdNum, navigate]);
+
+  const fetchBookedDates = async () => {
+    try {
+      console.log('Fetching booked dates for bungalow type:', bungalowId);
+      const response = await axios.get(`http://localhost:5002/api/reservations/bungalow/${bungalowId}`);
+      console.log('Received booked dates:', response.data);
+      
+      // Convert dates to local timezone and set time to midnight
+      const dates = response.data.map(reservation => {
+        const start = new Date(reservation.check_in_date);
+        const end = new Date(reservation.check_out_date);
+        
+        // Set time to midnight in local timezone
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        
+        return {
+          start,
+          end
+        };
+      });
+      
+      console.log('Processed dates:', dates);
+      setBookedDates(dates);
+    } catch (error) {
+      console.error("Error fetching booked dates:", error);
+      setBookedDates([]); // Set empty array on error
+    }
+  };
+
+  const isDateBooked = (date) => {
+    // Set time to midnight for comparison
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+    
+    const isBooked = bookedDates.some(booking => {
+      const bookingStart = new Date(booking.start);
+      const bookingEnd = new Date(booking.end);
+      
+      // Set time to midnight for comparison
+      bookingStart.setHours(0, 0, 0, 0);
+      bookingEnd.setHours(0, 0, 0, 0);
+      
+      const result = checkDate >= bookingStart && checkDate <= bookingEnd;
+      console.log('Checking date:', checkDate, 'against booking:', booking, 'result:', result);
+      return result;
+    });
+    
+    console.log('Is date booked:', checkDate, isBooked);
+    return isBooked;
+  };
+
+  const isDateSelectable = (date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+    
+    return checkDate >= today && !isDateBooked(checkDate);
+  };
+
+  const handleDateClick = (date) => {
+    if (!isDateSelectable(date)) return;
+
+    // Yerel tarih formatını kullan
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    
+    if (!checkInDate || (checkInDate && checkOutDate)) {
+      setCheckInDate(dateStr);
+      setCheckOutDate("");
+    } else if (dateStr > checkInDate) {
+      setCheckOutDate(dateStr);
+    }
+  };
+
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const days = [];
+
+    for (let i = 0; i < firstDay.getDay(); i++) {
+      days.push(null);
+    }
+
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      days.push(new Date(year, month, i));
+    }
+
+    return days;
+  };
+
+  const renderCalendar = () => {
+    const days = getDaysInMonth(selectedMonth);
+    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    return (
+      <div className="calendar">
+        <div className="calendar-header">
+          <button 
+            onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1))}
+            className="calendar-nav"
+          >
+            &lt;
+          </button>
+          <h3>{selectedMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
+          <button 
+            onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1))}
+            className="calendar-nav"
+          >
+            &gt;
+          </button>
+        </div>
+        <div className="calendar-grid">
+          {weekDays.map(day => (
+            <div key={day} className="calendar-weekday">{day}</div>
+          ))}
+          {days.map((date, index) => {
+            if (!date) return <div key={`empty-${index}`} className="calendar-day empty" />;
+            
+            const isBooked = isDateBooked(date);
+            const isSelectable = isDateSelectable(date);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day}`;
+            const isSelected = dateStr === checkInDate || dateStr === checkOutDate;
+            const isInRange = checkInDate && checkOutDate &&
+                            date > new Date(checkInDate) && 
+                            date < new Date(checkOutDate);
+
+            return (
+              <div
+                key={dateStr}
+                className={`calendar-day ${isBooked ? 'booked' : ''} ${isSelectable ? 'selectable' : ''} ${isSelected ? 'selected' : ''} ${isInRange ? 'in-range' : ''}`}
+                onClick={() => handleDateClick(date)}
+                onMouseEnter={() => setHoveredDate(date)}
+                onMouseLeave={() => setHoveredDate(null)}
+              >
+                <span>{date.getDate()}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="calendar-legend">
+          <div className="legend-item">
+            <div className="legend-color available"></div>
+            <span>Available</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-color booked"></div>
+            <span>Booked</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-color selected"></div>
+            <span>Selected</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const getCurrentDate = () => {
     const today = new Date();
     const yyyy = today.getFullYear();
-    const mm = today.getMonth() + 1; 
+    const mm = today.getMonth() + 1;
     const dd = today.getDate();
     return `${yyyy}-${mm < 10 ? "0" + mm : mm}-${dd < 10 ? "0" + dd : dd}`;
   };
 
   const calculatePrice = () => {
-    setErrorMessage(""); // Reset error mesaj
-    setSameDayError(""); // Reset same day error mesaj
+    setErrorMessage("");
+    setSameDayError("");
 
-    // Check if check in and check out dates are set
     if (checkInDate && checkOutDate) {
       const start = new Date(checkInDate);
       const end = new Date(checkOutDate);
 
-      // checking for check-out date is before check in date
       if (start >= end) {
         setSameDayError("Check-out date must be after check-in date.");
-        setTotalPrice(0); // reset total price if error happen
+        setTotalPrice(0);
         return;
       }
 
       const nights = Math.max((end - start) / (1000 * 60 * 60 * 24), 0);
 
-      // Check if the reservation exceed 30 days
       if (nights > 30) {
         setErrorMessage("Reservations can only be made for up to 30 days.");
-        setTotalPrice(0); // dont show if exceed 30 day
+        setTotalPrice(0);
         return;
       }
 
-      setTotalPrice(nights * pricePerNight);
+      setTotalPrice(nights * bungalowPrices[bungalowIdNum]);
     } else {
-      setTotalPrice(0); // Reset if dates is empty 
+      setTotalPrice(0);
     }
   };
 
-  //  price calculation when checkInDate or checkOutDate changes
   useEffect(() => {
     calculatePrice();
   }, [checkInDate, checkOutDate]);
@@ -84,9 +255,8 @@ const ReservationPage = () => {
     const newCheckInDate = e.target.value;
     setCheckInDate(newCheckInDate);
 
-    // If check-out date is less than the new check-in date, reset check-out date
     if (checkOutDate && new Date(newCheckInDate) >= new Date(checkOutDate)) {
-      setCheckOutDate(""); // Reset check-out date
+      setCheckOutDate("");
     }
   };
 
@@ -95,69 +265,78 @@ const ReservationPage = () => {
     setCheckOutDate(newCheckOutDate);
   };
 
-  //  for blocking manual date entry 
   const blockManualDateEntry = (e) => {
     e.preventDefault();
   };
 
-  //  step names
-  const stepNames = ["Choose Dates", "Enter Details", "Confirm Reservation"];
+  const stepNames = ["Choose Dates", "Confirm Reservation", "Payment"];
 
-  // go to the next step when Continue is clicked
   const handleContinue = () => {
     if (totalPrice > 0 && !sameDayError && !errorMessage) {
-      setCurrentStep(currentStep + 1); // move to next step
+      setCurrentStep(currentStep + 1);
     }
   };
 
-  //   back to previous step
   const handleBack = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1); // Move to previous 
+      setCurrentStep(currentStep - 1);
     }
   };
 
-  const handleSubmit = () => {
-    // reset error states
-    setFirstNameError(false);
-    setLastNameError(false);
-    setEmailError(false);
-    setPhoneError(false);
-    setTcknError(false);
+  const handleExpiryDateChange = (e) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 2) {
+      value = value.slice(0, 2) + '/' + value.slice(2, 4);
+    }
+    setExpiryDate(value);
+  };
 
-    let valid = true;
+  const handleSubmit = async () => {
+    try {
+      if (currentStep === 3) { // Payment step
+        if (!cardNumber || !cardName || !expiryDate || !cvv) {
+          setErrorMessage("Please fill in all payment details");
+          return;
+        }
 
-    // check fields are empty or not
-    if (firstName.trim() === "" || !/^[a-zA-ZğüşıöçĞÜŞİÖÇ]+$/.test(firstName)) {
-      setFirstNameError(true);
-      valid = false;
-    }
-    if (lastName.trim() === "" || !/^[a-zA-ZğüşıöçĞÜŞİÖÇ]+$/.test(lastName)) {
-      setLastNameError(true);
-      valid = false;
-    }
+        // Tarihleri YYYY-MM-DD formatında gönder
+        const reservationData = {
+          bungalow_id: bungalowIdNum,
+          user_id: user.id,
+          check_in_date: checkInDate, // Zaten YYYY-MM-DD formatında
+          check_out_date: checkOutDate, // Zaten YYYY-MM-DD formatında
+          total_price: totalPrice,
+          payment_method: paymentMethod,
+          card_number: cardNumber.replace(/\s/g, ''), // Remove spaces from card number
+          card_name: cardName,
+          expiry_date: expiryDate,
+          cvv: cvv,
+          status: 'pending'
+        };
 
-    if (email.trim() === "" || !/\S+@\S+\.\S+/.test(email)) {
-      setEmailError(true);
-      valid = false;
+        console.log('Sending reservation data:', reservationData);
+        
+        const response = await axios.post('http://localhost:5002/api/reservations', reservationData, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.data) {
+          setShowPopup(true);
+        }
+      } else {
+        setCurrentStep(currentStep + 1);
+      }
+    } catch (error) {
+      console.error('Error creating reservation:', error.response?.data || error);
+      setErrorMessage(error.response?.data?.error || 'Failed to create reservation. Please try again.');
     }
-    if (phone.trim() === "" || !/^[1-9][0-9]{9}$/.test(phone)) {
-      // Ensure 10 digits, no start 0
-      setPhoneError(true);
-      valid = false;
-    }
-    if (tckn.trim() === "" || !/^\d{11}$/.test(tckn)) {
-      // Ensure 11 digits
-      setTcknError(true);
-      valid = false;
-    }
+  };
 
-    if (!valid) {
-      return; // Don't continue if any required field is empty or invalid
-    }
-
-    // go to the next step
-    setCurrentStep(3);
+  const handleConfirmClick = () => {
+    setShowPopup(false);
+    navigate("/");
   };
 
   return (
@@ -183,36 +362,39 @@ const ReservationPage = () => {
           </div>
         ))}
       </div>
-        
-      {/* step1 choose dates */}
+
       {currentStep === 1 && (
         <div className="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
-          <label className="block mb-2 font-semibold">Check-in Date:</label>
-          <input
-            type="date"
-            className="w-full border p-2 rounded-lg mb-4"
-            value={checkInDate}
-            min={getCurrentDate()} // Ensure the user cannot select past dates and block it
-            onChange={handleCheckInChange}
-            onKeyDown={blockManualDateEntry} // Block manual input
-          />
+          <div className="mb-4">
+            {renderCalendar()}
+          </div>
 
-          <label className="block mb-2 font-semibold">Check-out Date:</label>
-          <input
-            type="date"
-            className="w-full border p-2 rounded-lg mb-4"
-            value={checkOutDate}
-            min={checkInDate || getCurrentDate()} // ensure the checkout date is not before check in date
-            onChange={handleCheckOutChange}
-            onKeyDown={blockManualDateEntry} // block manual input
-          />
+          <div className="mt-4">
+            <label className="block mb-2 font-semibold">Check-in Date:</label>
+            <input
+              type="date"
+              className="w-full border p-2 rounded-lg mb-4"
+              value={checkInDate}
+              min={getCurrentDate()}
+              onChange={handleCheckInChange}
+              onKeyDown={blockManualDateEntry}
+            />
 
-          {/* Error message for same-day check-in and check-out */}
+            <label className="block mb-2 font-semibold">Check-out Date:</label>
+            <input
+              type="date"
+              className="w-full border p-2 rounded-lg mb-4"
+              value={checkOutDate}
+              min={checkInDate || getCurrentDate()}
+              onChange={handleCheckOutChange}
+              onKeyDown={blockManualDateEntry}
+            />
+          </div>
+
           {sameDayError && (
             <p className="text-red-500 text-sm">{sameDayError}</p>
           )}
 
-          {/* Error message for more than 30 days reservation */}
           {errorMessage && (
             <p className="text-red-500 text-sm">{errorMessage}</p>
           )}
@@ -223,109 +405,127 @@ const ReservationPage = () => {
 
           <button
             className="bg-green-500 text-white py-2 px-6 rounded-lg mt-4 w-full sm:w-auto"
-            disabled={totalPrice === 0 || sameDayError || errorMessage} // Disable button if there are errors
+            disabled={totalPrice === 0 || sameDayError || errorMessage}
             onClick={handleContinue}
           >
             Continue
           </button>
         </div>
       )}
+
       {currentStep === 2 && (
         <div className="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-bold mb-4">Enter Details</h2>
+          <h2 className="text-2xl font-bold mb-4">Confirm Reservation</h2>
 
-          {/* for name */}
+          <p className="text-lg mb-2">
+            <strong>Name:</strong> {user?.name || 'Not available'}
+          </p>
+          <p className="text-lg mb-2">
+            <strong>Email:</strong> {user?.email || 'Not available'}
+          </p>
+          <p className="text-lg mb-2">
+            <strong>Bungalow Type:</strong> {bungalowNames[bungalowIdNum]}
+          </p>
+          <p className="text-lg mb-2">
+            <strong>Check-in Date:</strong> {checkInDate}
+          </p>
+          <p className="text-lg mb-2">
+            <strong>Check-out Date:</strong> {checkOutDate}
+          </p>
+          <p className="text-lg font-semibold mb-4">
+            <strong>Total Price:</strong> ${totalPrice}
+          </p>
+
+          <button 
+            className="bg-green-500 text-white py-2 px-6 rounded-lg mt-4 w-full sm:w-auto"
+            onClick={handleSubmit}
+          >
+            Continue to Payment
+          </button>
+
+          <button 
+            className="bg-gray-500 text-white py-2 px-6 rounded-lg mt-4 w-full sm:w-auto inline-flex ml-4"
+            onClick={handleBack}
+          >
+            Back
+          </button>
+        </div>
+      )}
+
+      {currentStep === 3 && (
+        <div className="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold mb-4">Payment Details</h2>
+
           <div className="mb-4">
-            <label className="block mb-2 font-semibold">First Name:</label>
+            <label className="block mb-2 font-semibold">Payment Method:</label>
+            <select
+              className="w-full border p-2 rounded-lg"
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
+              <option value="credit-card">Credit Card</option>
+              <option value="debit-card">Debit Card</option>
+            </select>
+          </div>
+
+          <div className="mb-4">
+            <label className="block mb-2 font-semibold">Card Number:</label>
             <input
               type="text"
               className="w-full border p-2 rounded-lg"
-              placeholder="Enter your first name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="1234 5678 9012 3456"
+              value={cardNumber}
+              onChange={(e) => setCardNumber(e.target.value)}
             />
-            {firstNameError && (
-              <p className="text-red-500 text-sm mt-1">
-                First name must contain only letters
-              </p>
-            )}
           </div>
 
           <div className="mb-4">
-            <label className="block mb-2 font-semibold">Last Name:</label>
+            <label className="block mb-2 font-semibold">Cardholder Name:</label>
             <input
               type="text"
               className="w-full border p-2 rounded-lg"
-              placeholder="Enter your last name"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              placeholder="John Doe"
+              value={cardName}
+              onChange={(e) => setCardName(e.target.value)}
             />
-            {lastNameError && (
-              <p className="text-red-500 text-sm mt-1">
-                Last name must contain only letters
-              </p>
-            )}
           </div>
 
-          {/* for mail */}
-          <div className="mb-4">
-            <label className="block mb-2 font-semibold">Email:</label>
-            <input
-              type="email"
-              className="w-full border p-2 rounded-lg"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            {emailError && (
-              <p className="text-red-500 text-sm mt-1">
-                Email must be valid (must contain '@' and '.com')
-              </p>
-            )}
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block mb-2 font-semibold">Expiry Date:</label>
+              <input
+                type="text"
+                className="w-full border p-2 rounded-lg"
+                placeholder="MM/YY"
+                value={expiryDate}
+                onChange={handleExpiryDateChange}
+                maxLength={5}
+              />
+            </div>
+            <div>
+              <label className="block mb-2 font-semibold">CVV:</label>
+              <input
+                type="text"
+                className="w-full border p-2 rounded-lg"
+                placeholder="123"
+                value={cvv}
+                onChange={(e) => setCvv(e.target.value)}
+                maxLength={3}
+              />
+            </div>
           </div>
 
-          {/* for number */}
-          <div className="mb-4">
-            <label className="block mb-2 font-semibold">Phone Number:</label>
-            <input
-              type="tel"
-              className="w-full border p-2 rounded-lg"
-              placeholder="Enter your phone number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-            {phoneError && (
-              <p className="text-red-500 text-sm mt-1">
-                Phone number must be 10 digits, without a leading 0
-              </p>
-            )}
-          </div>
-
-          {/* for tckn */}
-          <div className="mb-4">
-            <label className="block mb-2 font-semibold">TCKN:</label>
-            <input
-              type="text"
-              className="w-full border p-2 rounded-lg"
-              placeholder="Enter your TCKN"
-              value={tckn}
-              onChange={(e) => setTckn(e.target.value)}
-            />
-            {tcknError && (
-              <p className="text-red-500 text-sm mt-1">
-                TCKN must be 11 digits
-              </p>
-            )}
-          </div>
+          <p className="text-lg font-semibold mb-4">
+            Total Amount: ${totalPrice}
+          </p>
 
           <button
             className="bg-green-500 text-white py-2 px-6 rounded-lg mt-4 w-full sm:w-auto"
-            onClick={handleSubmit} // Submit the form
+            onClick={handleSubmit}
           >
-            Continue
+            Complete Payment
           </button>
 
-          {/* button to go  back */}
           <button
             className="bg-gray-500 text-white py-2 px-6 rounded-lg mt-4 w-full sm:w-auto inline-flex ml-4"
             onClick={handleBack}
@@ -334,65 +534,17 @@ const ReservationPage = () => {
           </button>
         </div>
       )}
-      {currentStep === 3 && (
-        <div className="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-bold mb-4">Confirm Reservation</h2>
 
-          <p className="text-lg mb-2">
-            <strong>Name:</strong> {firstName} {lastName}
-          </p>
-          <p className="text-lg mb-2">
-            <strong>Email:</strong> {email}
-          </p>
-          <p className="text-lg mb-2">
-            <strong>Phone Number:</strong> {phone}
-          </p>
-          <p className="text-lg mb-2">
-            <strong>TCKN:</strong> {tckn}
-          </p>
-
-          <p className="text-lg mb-2">
-            <strong>Bungalow Type:</strong>{" "}
-            {bungalowId.replace("-", " ").toUpperCase()}
-          </p>
-          <p className="text-lg mb-2">
-            <strong>Check-in Date:</strong> {checkInDate}
-          </p>
-          <p className="text-lg mb-2">
-            <strong>Check-out Date:</strong> {checkOutDate}
-          </p>
-
-          <p className="text-lg font-semibold mb-4">
-            <strong>Total Price:</strong> ${totalPrice}
-          </p>
-
-          <button
-            className="bg-blue-500 text-white py-2 px-6 rounded-lg mt-4"
-            onClick={() => setShowPopup(true)}
-          >
-            Confirm Reservation
-          </button>
-
-          <button
-            className="bg-gray-500 text-white py-2 px-6 rounded-lg mt-4 ml-4"
-            onClick={handleBack} // Go back to the previous step
-          >
-            Back
-          </button>
-        </div>
-      )}
-      {/* pop up  */}
       {showPopup && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
-            <h2 className="text-2xl font-bold mb-4">Reservation Confirmed</h2>
-            <p className="mb-2">Your reservation has been successfully submitted.</p>
-            <p className="mb-4">We will contact you soon for payment.</p>
-            <button 
-              className="bg-blue-500 text-white py-2 px-6 rounded-lg"
-              onClick={handleConfirmClick} //  click to ok and go home page
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm text-center">
+            <h2 className="text-2xl font-bold mb-4 text-green-600">Success!</h2>
+            <p className="text-lg mb-4">Reservation has been created successfully.</p>
+            <button
+              className="bg-green-500 text-white px-4 py-2 rounded"
+              onClick={handleConfirmClick}
             >
-              OK
+              Go Home
             </button>
           </div>
         </div>
